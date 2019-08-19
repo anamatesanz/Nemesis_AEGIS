@@ -180,7 +180,9 @@ def save_poses_in_a_csv(pose, seq):
     save_to_csv(my_seq, gen_img, score)
 
 ### FOR LOOP
+
 t = time.time()
+
 for _ in range(0, NUM_STRUCTURES_IN_DATA_BASE):
     # Create DNA chain
     noise = noise_nucleotides()
@@ -208,7 +210,7 @@ for _ in range(0, NUM_STRUCTURES_IN_DATA_BASE):
     remove_unused_files()
     # Save the pose, the sequence and the scoring in the csv
     save_poses_in_a_csv(new_pose, noise)
-
+    
 print("The data base has been created")
 elapsed = time.time() - t
 print("Elapsed time %d"%(elapsed))
