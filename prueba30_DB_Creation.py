@@ -74,11 +74,12 @@ def noise_nucleotides():
 # FUNCTIONS THAT PERFORM THE DNA/RNA CHANGES
 # Performs the DNA to RNA change
 def from_DNA_to_RNA(noise):
+    noise_copy=noise
     global NUM_NUCLEOTIDES, TYMINE
     for i in range(0, NUM_NUCLEOTIDES):
-        if noise[i] == TYMINE:
-            noise[i] = URACIL
-    return noise
+        if noise_copy[i] == TYMINE:
+            noise_copy[i] = URACIL
+    return noise_copy
 
 # Performs the RNA to DNA change
 def from_RNA_to_DNA(atomes):  # (Lyon Igem code)
@@ -183,8 +184,10 @@ t = time.time()
 for _ in range(0, NUM_STRUCTURES_IN_DATA_BASE):
     # Create DNA chain
     noise = noise_nucleotides()
+    print(noise)
     # Transform to RNA
     rna = from_DNA_to_RNA(noise)
+    print(noise)
     seq_A = "".join(rna)
     # Compute secondary structure
     (secondary_structure, _) = RNA.fold(seq_A)
