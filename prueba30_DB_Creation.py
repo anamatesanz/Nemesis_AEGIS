@@ -10,7 +10,7 @@ import numpy as np
 import csv
 
 # Threads
-import thread
+from threading import Thread
 
 # Os
 import os
@@ -50,6 +50,15 @@ URACIL = "u"
 # os.system("export PYTHONPATH=$PYTHONPATH:$RNA_TOOLS/bin/ ")
 # os.system("source ~/.bashrc ")
 # os.system("python $RNA_TOOLS/sym_link.py ")
+
+class MyThread(Thread):
+    # Constructor
+    def __init__(self, val):
+        Thread.__init__(self)
+        self.file_Name = val
+
+    def run(self):
+        create_csv(self.file_Name)
 
 # FUNCTIONS THAT CREATES A RANDOM DNA - ONE CHAIN
 # Choose a,c,g or t randomly
@@ -143,7 +152,7 @@ def remove_unused_files():
 # Extracts the angles from pose, opens csv and save: Save the given sequence in a csv
 def save_to_csv(seq, x, score, file_Name):
     table = [seq, x, score]
-    
+
     with open(file_Name, "a", newline="", encoding="utf-8") as csvfile:
          writer = csv.writer(csvfile)
          writer.writerow(table)
@@ -180,11 +189,12 @@ t = time.time()
 for thread_csv in (THREADS):
 
     file_Name = RESULTS_CSV + str(thread_csv) + '.csv'
-    
+
     threads = []
 
     try:
-      threads[thread_csv] = thread.start_new_thread(create_csv,file_Name + str(thread_csv))
+      threads[thread_csv] = MyThread(file_Name + str(thread_csv))
+      threads[thread_csv].start()
     except:
       print("Error: unable to start thread")
 
@@ -199,12 +209,12 @@ if not (out == 1):
 
 # Concatenate and Synchronize the threads
 for thread_csv in (THREADS):
-    
+
     threads[thread_csv].join()
     os.system("cat " + file_Name + str(thread_csv) + " >> " RESULTS_CSV + ".csv")
 
 
-def create_csv():
+def create_csv(file_Name):
 
 	for _ in range(0, NUM_STRUCTURES_IN_DATA_BASE, file_Name):
 	    # Create DNA chain
