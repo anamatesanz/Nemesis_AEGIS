@@ -9,6 +9,9 @@ import numpy as np
 # Pandas
 import csv
 
+# Threads
+import thread
+
 # Os
 import os
 
@@ -24,11 +27,12 @@ import time
 ### GLOBAL VARIABLES
 # Change
 NUM_NUCLEOTIDES = 50
-RESULTS_CSV = "Carpeta_en_uso/database.csv"
+RESULTS_CSV = "Carpeta_en_uso/database"
 ROSETA_FILES = "/Users/anuska/Desktop/IGEM/Rosetta/rosetta_src_code/"
 NUM_STRUCTURES_PER_SEQUENCE = 100
 NUM_STRUCTURES_IN_DATA_BASE = 1000
 MINIMIZATION_RNA = "false" 
+THREADS = 4
 
 # No change
 ADENINE = "a"
@@ -36,7 +40,6 @@ GUANINE = "g"
 CITOSINE = "c"
 TYMINE = "t"
 URACIL = "u"
-FIRST_TIME = True
 
 ### DEFINED FUNCTIONS
 # FUNCTION THAT EXTRACT AND COMPILE ROSETTA AND RNA TOOLS
@@ -138,23 +141,15 @@ def remove_unused_files():
 
 # FUNCTIONS THAT SAVES THE DATA INTO CSV
 # Extracts the angles from pose, opens csv and save: Save the given sequence in a csv
-def save_to_csv(seq, x, score):
-    headers = ("Sequence", "Degrees", "Score")
+def save_to_csv(seq, x, score, file_Name):
     table = [seq, x, score]
-    global FIRST_TIME, RESULTS_CSV
-    if (FIRST_TIME == True):
-        with open(RESULTS_CSV, "w", newline="", encoding="utf-8") as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(headers)
-            writer.writerow(table)
-        FIRST_TIME = False
-    else:
-        with open(RESULTS_CSV, "a", newline="", encoding="utf-8") as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(table)
+    
+    with open(file_Name, "a", newline="", encoding="utf-8") as csvfile:
+         writer = csv.writer(csvfile)
+         writer.writerow(table)
 
 # Save the poses in a csv (per lines)
-def save_poses_in_a_csv(pose, seq):
+def save_poses_in_a_csv(pose, seq,file_Name):
     global NUM_NUCLEOTIDES, ADENINE, GUANINE, TYMINE, CITOSINE
     gen_img = []
     for k in range(0, NUM_NUCLEOTIDES):
@@ -177,40 +172,71 @@ def save_poses_in_a_csv(pose, seq):
     print(sequence)
     my_seq = "".join(sequence)
     score = scorefxn(pose)
-    save_to_csv(my_seq, gen_img, score)
+    save_to_csv(my_seq, gen_img, score,file_Name)
 
 ### FOR LOOP
 t = time.time()
-for _ in range(0, NUM_STRUCTURES_IN_DATA_BASE):
-    # Create DNA chain
-    noise = noise_nucleotides()
-    print(noise)
-    # Transform to RNA
-    rna = from_DNA_to_RNA(noise)
-    print(noise)
-    seq_A = "".join(rna)
-    # Compute secondary structure
-    (secondary_structure, _) = RNA.fold(seq_A)
-    # Save FASTA amd Secondary strcuture
-    save_pose_in_FASTA_format(seq_A)
-    save_secondary_structure(secondary_structure)
-    # Configure and preform the folding in a Rosetta's protocol
-    os.system("$ROSETTA3/rna_denovo.default.macosclangrelease -fasta aptamer.txt -nstruct %s -minimize_rna %s -secstruct_file aptamer_sec.txt -out::file::silent my_rna_structures.out" % (NUM_STRUCTURES_PER_SEQUENCE,MINIMIZATION_RNA))
-    # Minimize and extract the best one
-    os.system("$RNA_TOOLS/silent_util/silent_file_sort_and_select.py my_rna_structures.out -select 1 -o aptamer_best.out")
-    # To PDB in a Rosetta's protocol
-    os.system("$ROSETTA3/score.default.macosclangrelease -in:file:silent aptamer_best.out -in::file::fullatom -out:output")
-    # Extract pose from PDB
-    atomes = extract_atomes_from_PDB()
-    # Performns the RNA to DNA change
-    output = from_RNA_to_DNA(atomes)
-    # Saves the DNA into PDB format and extrat the pose
-    new_pose = save_DNA_to_PDB(output)
-    # Remove unused files
-    remove_unused_files()
-    # Save the pose, the sequence and the scoring in the csv
-    save_poses_in_a_csv(new_pose, noise)
+
+for thread_csv in (THREADS):
+
+    file_Name = RESULTS_CSV + str(thread_csv) + '.csv'
+    
+    threads = []
+
+    try:
+      threads[thread_csv] = thread.start_new_thread(create_csv,file_Name + str(thread_csv))
+    except:
+      print("Error: unable to start thread")
+
+# Create final database
+out =  os.system("if [ -e " + RESULTS_CSV + ".csv ] ; then echo 1; fi"
+headers = ("Sequence", "Degrees", "Score")
+
+if not (out == 1):
+   with open(RESULTS_CSV + ".csv", "w", newline="", encoding="utf-8") as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(headers)
+
+# Concatenate and Synchronize the threads
+for thread_csv in (THREADS):
+    
+    threads[thread_csv].join()
+    os.system("cat " + file_Name + str(thread_csv) + " >> " RESULTS_CSV + ".csv")
+
+
+def create_csv():
+
+	for _ in range(0, NUM_STRUCTURES_IN_DATA_BASE, file_Name):
+	    # Create DNA chain
+	    noise = noise_nucleotides()
+	    print(noise)
+	    # Transform to RNA
+	    rna = from_DNA_to_RNA(noise)
+	    print(noise)
+	    seq_A = "".join(rna)
+	    # Compute secondary structure
+	    (secondary_structure, _) = RNA.fold(seq_A)
+	    # Save FASTA amd Secondary strcuture
+	    save_pose_in_FASTA_format(seq_A)
+	    save_secondary_structure(secondary_structure)
+	    # Configure and preform the folding in a Rosetta's protocol
+	    os.system("$ROSETTA3/rna_denovo.default.macosclangrelease -fasta aptamer.txt -nstruct %s -minimize_rna %s -secstruct_file aptamer_sec.txt -out::file::silent my_rna_structures.out" % (NUM_STRUCTURES_PER_SEQUENCE,MINIMIZATION_RNA))
+	    # Minimize and extract the best one
+	    os.system("$RNA_TOOLS/silent_util/silent_file_sort_and_select.py my_rna_structures.out -select 1 -o aptamer_best.out")
+	    # To PDB in a Rosetta's protocol
+	    os.system("$ROSETTA3/score.default.macosclangrelease -in:file:silent aptamer_best.out -in::file::fullatom -out:output")
+	    # Extract pose from PDB
+	    atomes = extract_atomes_from_PDB()
+	    # Performns the RNA to DNA change
+	    output = from_RNA_to_DNA(atomes)
+	    # Saves the DNA into PDB format and extrat the pose
+	    new_pose = save_DNA_to_PDB(output)
+	    # Remove unused files
+	    remove_unused_files()
+	    # Save the pose, the sequence and the scoring in the csv
+	    save_poses_in_a_csv(new_pose, noise, file_Name)
 
 print("The data base has been created")
 elapsed = time.time() - t
 print("Elapsed time %d"%(elapsed))
+
