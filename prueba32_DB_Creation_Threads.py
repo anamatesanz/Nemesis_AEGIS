@@ -225,6 +225,7 @@ for thread_csv in range(0, THREADS):
     try:
         threads[thread_csv] = MyThread(str(thread_csv) + str(thread_csv))
         threads[thread_csv].start()
+        threads[thread_csv].run()
     except:
         print("Error: unable to start thread")
 
