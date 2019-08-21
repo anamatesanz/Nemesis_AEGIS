@@ -34,7 +34,7 @@ NUM_NUCLEOTIDES = 50
 RESULTS_CSV = "Carpeta_en_uso/database"
 ROSETA_FILES = "/Users/anuska/Desktop/IGEM/Rosetta/rosetta_src_code/"
 NUM_STRUCTURES_PER_SEQUENCE = 100
-NUM_STRUCTURES_IN_DATA_BASE = 2000
+NUM_STRUCTURES_IN_DATA_BASE = 10000
 MINIMIZATION_RNA = "false"
 THREADS = 4
 
@@ -54,7 +54,7 @@ URACIL = "u"
 # os.system("export PYTHONPATH=$PYTHONPATH:$RNA_TOOLS/bin/ ")
 # os.system("source ~/.bashrc ")
 # os.system("python $RNA_TOOLS/sym_link.py ")
-
+#export ROSETTA=/Users/anuska/Desktop/IGEM/Rosetta/rosetta_src_code/ ; export RNA_TOOLS=$ROSETTA/tools/rna_tools/ ; export PATH=$RNA_TOOLS/bin/:$PATH ; export ROSETTA3=$ROSETTA/main/source/bin/ ; export PYTHONPATH=$PYTHONPATH:$RNA_TOOLS/bin/ ; source ~/.bashrc ; python $RNA_TOOLS/sym_link.py
 # FUNCTIONS THAT CREATES A RANDOM DNA - ONE CHAIN
 # Choose a,c,g or t randomly
 def random_nucleotide():
@@ -171,7 +171,7 @@ def save_poses_in_a_csv(pose, seq, file_Name):
             sequence.append("G[GUA]")
         elif seq[s] == CITOSINE:
             sequence.append("C[CYT]")
-        elif seq[s] == TYMINE:
+        elif seq[s] == TYMINE or seq[s] == URACIL:
             sequence.append("T[THY]")
     print(sequence)
     my_seq = "".join(sequence)
@@ -208,7 +208,6 @@ def for_loop_that_creates_csv(file_Name):
         remove_unused_files(file_Name)
         # Save the pose, the sequence and the scoring in the csv
         save_poses_in_a_csv(new_pose, noise, file_Name)
-        print("Final 1 loop hilo:"+file_Name)
 
 ### THREADS PART
 # Initialize threads and start them
@@ -234,13 +233,10 @@ if not (database.is_file() == 1):
 # Concatenate and Synchronize the threads
 for thread_csv in range(0, THREADS):
     threads[thread_csv].join()
-    os.system("cat " + RESULTS_CSV + str(thread_csv) +
-              ".csv" + " >> " + RESULTS_CSV + ".csv")
+    os.system("cat " + RESULTS_CSV + str(thread_csv) + ".csv" + " >> " + RESULTS_CSV + ".csv")
     os.system("rm "+ RESULTS_CSV + str(thread_csv) +".csv")
 
 # Communicate to the user that the database has been created
 print("The data base has been created")
 elapsed = time.time() - t
 print("Elapsed time %d" % (elapsed))
-# 4 in database with threads: 
-# 4 in database without threads: 793
