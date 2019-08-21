@@ -1,5 +1,4 @@
 ### IMPORTS
-
 # VienaRNA
 import RNA
 
@@ -54,7 +53,8 @@ URACIL = "u"
 # os.system("export PYTHONPATH=$PYTHONPATH:$RNA_TOOLS/bin/ ")
 # os.system("source ~/.bashrc ")
 # os.system("python $RNA_TOOLS/sym_link.py ")
-#export ROSETTA=/Users/anuska/Desktop/IGEM/Rosetta/rosetta_src_code/ ; export RNA_TOOLS=$ROSETTA/tools/rna_tools/ ; export PATH=$RNA_TOOLS/bin/:$PATH ; export ROSETTA3=$ROSETTA/main/source/bin/ ; export PYTHONPATH=$PYTHONPATH:$RNA_TOOLS/bin/ ; source ~/.bashrc ; python $RNA_TOOLS/sym_link.py
+# Console: export ROSETTA=/Users/anuska/Desktop/IGEM/Rosetta/rosetta_src_code/ ; export RNA_TOOLS=$ROSETTA/tools/rna_tools/ ; export PATH=$RNA_TOOLS/bin/:$PATH ; export ROSETTA3=$ROSETTA/main/source/bin/ ; export PYTHONPATH=$PYTHONPATH:$RNA_TOOLS/bin/ ; source ~/.bashrc ; python $RNA_TOOLS/sym_link.py
+
 # FUNCTIONS THAT CREATES A RANDOM DNA - ONE CHAIN
 # Choose a,c,g or t randomly
 def random_nucleotide():
