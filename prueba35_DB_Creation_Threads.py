@@ -9,6 +9,9 @@ import numpy as np
 # Check file exists
 from pathlib import Path
 
+# Import args
+import sys
+
 # Pandas
 import csv
 
@@ -35,7 +38,7 @@ RESULTS_CSV = "Carpeta_en_uso/database"
 ROSETA_FILES = "/Users/anuska/Desktop/IGEM/Rosetta/rosetta_src_code/"
 NUM_STRUCTURES_PER_SEQUENCE = 100
 NUM_STRUCTURES_IN_DATA_BASE = 200
-MY_NUM = str(5)
+MY_NUM = sys.argv[1]    # arg
 MINIMIZATION_RNA = "false"
 THREADS = 1
 
