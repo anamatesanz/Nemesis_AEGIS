@@ -38,9 +38,8 @@ RESULTS_CSV = "Carpeta_en_uso/database"
 ROSETA_FILES = "/Users/anuska/Desktop/IGEM/Rosetta/rosetta_src_code/"
 NUM_STRUCTURES_PER_SEQUENCE = 100
 NUM_STRUCTURES_IN_DATA_BASE = 200
-MY_NUM = sys.argv[1]    # arg
+MY_NUM = sys.argv[1] # arg
 MINIMIZATION_RNA = "false"
-THREADS = 1
 
 # No change
 ADENINE = "a"
@@ -58,7 +57,8 @@ URACIL = "u"
 # os.system("export PYTHONPATH=$PYTHONPATH:$RNA_TOOLS/bin/ ")
 # os.system("source ~/.bashrc ")
 # os.system("python $RNA_TOOLS/sym_link.py ")
-#export ROSETTA=/Users/anuska/Desktop/IGEM/Rosetta/rosetta_src_code/ ; export RNA_TOOLS=$ROSETTA/tools/rna_tools/ ; export PATH=$RNA_TOOLS/bin/:$PATH ; export ROSETTA3=$ROSETTA/main/source/bin/ ; export PYTHONPATH=$PYTHONPATH:$RNA_TOOLS/bin/ ; source ~/.bashrc ; python $RNA_TOOLS/sym_link.py
+# export ROSETTA=/Users/anuska/Desktop/IGEM/Rosetta/rosetta_src_code/ ; export RNA_TOOLS=$ROSETTA/tools/rna_tools/ ; export PATH=$RNA_TOOLS/bin/:$PATH ; export ROSETTA3=$ROSETTA/main/source/bin/ ; export PYTHONPATH=$PYTHONPATH:$RNA_TOOLS/bin/ ; source ~/.bashrc ; python $RNA_TOOLS/sym_link.py
+
 # FUNCTIONS THAT CREATES A RANDOM DNA - ONE CHAIN
 # Choose a,c,g or t randomly
 def random_nucleotide():
@@ -214,15 +214,10 @@ def for_loop_that_creates_csv(file_Name):
         save_poses_in_a_csv(new_pose, noise, file_Name)
 
 ### THREADS PART
-# Initialize threads and start them
 t = time.time()  # Measure the used time
-threads = []
-my_t=None
-for thread_csv in range(0, THREADS):
-    my_t = Thread(target=for_loop_that_creates_csv, args=(str(thread_csv)+MY_NUM,))
-    threads.append(my_t)
-for my_t in range(0, THREADS):   
-    threads[my_t].start()
+# Initialize threads and start them
+my_t = Thread(target=for_loop_that_creates_csv, args=(str(MY_NUM),))
+my_t.start()
 
 # Create final database
 
@@ -235,15 +230,12 @@ if not (database.is_file() == 1):
         writer.writerow(headers)
 
 # Concatenate and Synchronize the threads
-for thread_csv in range(0, THREADS):
-    threads[thread_csv].join()
-    os.system("cat " + RESULTS_CSV + str(thread_csv) + MY_NUM + ".csv" + " >> " + RESULTS_CSV + ".csv")
-    os.system("rm "+ RESULTS_CSV + str(thread_csv) + MY_NUM +".csv")
+my_t.join()
+os.system("cat " + RESULTS_CSV + str(MY_NUM) + ".csv" + " >> " + RESULTS_CSV + ".csv")
+os.system("rm "+ RESULTS_CSV + str(MY_NUM) +".csv")
 
 # Communicate to the user that the database has been created
 print("The data base has been created")
 elapsed = time.time() - t
 print("Elapsed time %d" % (elapsed))
-print("NUMBER FINISHED %s"%(MY_NUM))
-# 4 in database with threads: 
-# 4 in database without threads: 793
+print("NUMBER FINISHED %s"%(str(MY_NUM)))

@@ -36,7 +36,7 @@ scorefxn = get_fa_scorefxn()
 NUM_NUCLEOTIDES = 50
 RESULTS_CSV = "Carpeta_en_uso/database.csv"
 ROSETA_FILES = "/Users/anuska/Desktop/IGEM/Rosetta/rosetta_src_code/"
-NUM_STRUCTURES_PER_SEQUENCE = 1
+NUM_STRUCTURES_PER_SEQUENCE = 100
 
 # No change
 ADENINE = "a"
@@ -44,7 +44,7 @@ GUANINE = "g"
 CITOSINE = "c"
 TYMINE = "t"
 URACIL = "u"
-FIRST_TIME = True
+FIRST_TIME = False
 
 # FUNCTION THAT CREATES A RANDOM DNA - ONE CHAIN
 # Choose a,c,g or t randomly
@@ -222,6 +222,5 @@ def save_poses_in_a_csv(pose, seq):
     my_seq = "".join(sequence)
     score = scorefxn(pose)
     save_to_csv(my_seq, gen_img, score)
-
 
 save_poses_in_a_csv(new_pose, seq_A)
