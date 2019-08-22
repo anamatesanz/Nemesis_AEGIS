@@ -36,8 +36,8 @@ import time
 NUM_NUCLEOTIDES = 50
 RESULTS_CSV = "Carpeta_en_uso/database"
 ROSETA_FILES = "/Users/anuska/Desktop/IGEM/Rosetta/rosetta_src_code/"
-NUM_STRUCTURES_PER_SEQUENCE = 100
-NUM_STRUCTURES_IN_DATA_BASE = 200
+NUM_STRUCTURES_PER_SEQUENCE = 1
+NUM_STRUCTURES_IN_DATA_BASE = 20
 MY_NUM = sys.argv[1] # arg
 MINIMIZATION_RNA = "false"
 

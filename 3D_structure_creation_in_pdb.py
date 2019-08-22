@@ -216,7 +216,7 @@ def save_poses_in_a_csv(pose, seq):
             sequence.append("G[GUA]")
         elif seq[s] == CITOSINE:
             sequence.append("C[CYT]")
-        elif seq[s] == TYMINE:
+        elif seq[s] == TYMINE or seq[s] == URACIL:
             sequence.append("T[THY]")
     print(sequence)
     my_seq = "".join(sequence)
