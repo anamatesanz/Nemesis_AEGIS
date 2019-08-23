@@ -36,8 +36,8 @@ import time
 NUM_NUCLEOTIDES = 50
 RESULTS_CSV = "Carpeta_en_uso/database"
 ROSETA_FILES = "/Users/anuska/Desktop/IGEM/Rosetta/rosetta_src_code/"
-NUM_STRUCTURES_PER_SEQUENCE = 1
-NUM_STRUCTURES_IN_DATA_BASE = 200
+NUM_STRUCTURES_PER_SEQUENCE = 100
+NUM_STRUCTURES_IN_DATA_BASE = 100
 MY_NUM = sys.argv[1] # arg
 MINIMIZATION_RNA = "false"
 
@@ -166,7 +166,6 @@ def save_poses_in_a_csv(pose, seq, file_Name):
         gen_img.append(pose.delta(k+1))
         gen_img.append(pose.chi(k+1))
         gen_img.append(pose.zeta(k+1))
-    print(gen_img)
     sequence = []
     for s in range(0, NUM_NUCLEOTIDES):
         if seq[s] == ADENINE:
@@ -177,7 +176,6 @@ def save_poses_in_a_csv(pose, seq, file_Name):
             sequence.append("C[CYT]")
         elif seq[s] == TYMINE or seq[s] == URACIL:
             sequence.append("T[THY]")
-    print(sequence)
     my_seq = "".join(sequence)
     score = scorefxn(pose)
     save_to_csv(my_seq, gen_img, score, file_Name)
