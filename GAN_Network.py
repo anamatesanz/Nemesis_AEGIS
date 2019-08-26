@@ -37,13 +37,13 @@ scorefxn = get_fa_scorefxn()
 #Change
 FIRST_TIME = True
 NUM_NUCLEOTIDES = 50
-BATCH_SIZE = 50
-DROPOUT = 0.2
+BATCH_SIZE = 100
+DROPOUT = 0.9
 RESULTS_CSV = "Carpeta_en_uso/resultado.csv"
 DATA_BASE_CSV = "Carpeta_en_uso/prueba.csv"
 POSES_FOLDER = "Carpeta_en_uso/"
-EPOCHS = 100
-SAMPLE_INTERVAL = 10
+EPOCHS = 1000
+SAMPLE_INTERVAL = 100
 
 #No change
 NUM_COL_GEN = 1
@@ -53,7 +53,6 @@ NUM_CHAN_DIS = 5
 NUM_ANGLES = 5
 TYPE_NUCLEOTIDES = 4
 DEPTH = NUM_ANGLES*TYPE_NUCLEOTIDES #20
-DEGREES = 360
 NUM_VALUES_DB=None
 
 
@@ -134,7 +133,7 @@ def reshape_sequence(sequence):
 degrees_reshaped=reshape_degrees(degrees)
 #print(degrees_reshaped.shape) = (NUM_VALUES_DB,5,50,1)
 sequence_reshaped=reshape_sequence(sequence)
-#print(sequence_reshaped.shape) = (NUM_VALUES_DB,1,50,2)
+#print(sequence_reshaped.shape) = (NUM_VALUES_DB,4,50,1)
 
 #With the X and y construct 2 groups= train and test groups
 X_train, X_test, Y_train, Y_test = train_test_split(sequence_reshaped,degrees_reshaped, test_size=0.1)
@@ -147,62 +146,76 @@ K.set_image_dim_ordering("th") #(channels, rows, cols)
 def build_my_generator(data_col=NUM_COL_GEN, data_row=NUM_NUCLEOTIDES, channels=NUM_CHAN_GEN, batch_size=BATCH_SIZE, angles=NUM_ANGLES):
 
     global DEPTH, DROPOUT
-
-    model = Sequential()
-
+    # Construct the model
+    # Input -> (4,50,1)
+    base_pairs = Input(shape=(channels, data_row, data_col))
+    # Applies the model to the data:
+    
     # CNN with diabolo form: 2 parts -> convolution and deconvolution
     # Convolution part:
     # Convolution layer
-    model.add(Conv2D(DEPTH, (5,1), padding="same"))
+    
+    x = Conv2D(DEPTH, (5,1), padding="same")(base_pairs)
     # Conv2 : 1. number of filters,
     # 2.shape of filters 
     # 3."same"-> results in padding the input such that the output has the same length as the original input.
-    model.add(Dropout(DROPOUT))
+    x = Dropout(DROPOUT)(x)
     # Dropuot add variance (Reduce the overfitting)
-    model.add(Activation("relu"))
+    x = Activation("relu")(x)
     # Relu: rectifier function
     # Output -> (20, 50, 1)
 
     # Pooling layer:
     # Reduce the size of the images as much as possible: it reduces the complexity of the model without reducing it’s performance.
-    model.add(MaxPooling2D(pool_size=(2, 1)))
+    x = MaxPooling2D(pool_size=(2, 1))(x)
     # Divide rows and columns by pool_size
     # Output => (20, 25, 1)
 
-    model.add(Conv2D((DEPTH*2), (5,1), padding="same"))
-    model.add(Dropout(DROPOUT))
-    model.add(Activation("relu"))
+    x = Conv2D((DEPTH*2), (5,1), padding="same")(x)
+    x = Dropout(DROPOUT)(x)
+    x = Activation("relu")(x)
     # Output => (40, 25, 1)
     
-    model.add(MaxPooling2D(pool_size=(5, 1)))
+    x = MaxPooling2D(pool_size=(5, 1))(x)
     # Output => (40, 5, 1)
+
+    x = Conv2D((DEPTH*4), (5,1), padding="same")(x)
+    x = Dropout(DROPOUT)(x)
+    x = Activation("relu")(x)
+    # Output => (80, 5, 1)
+    
+    x = MaxPooling2D(pool_size=(5, 1))(x)
+    # Output => (80, 1, 1)
 
     # Deconvolution part:
     # Unpooling layer (pooling adversary)
-    model.add(UpSampling2D(size=(5, 1)))
+    x = UpSampling2D(size=(5, 1))(x)
+    # Output => (80, 5, 1)
+
+    # Deconvolution layer
+    x = Conv2DTranspose(DEPTH*2, (5,1), padding="same")(x)
+    x = Dropout(DROPOUT)(x)
+    x = Activation("relu")(x)
+    # Output => (40, 5, 1)
+
+    x = UpSampling2D(size=(5, 1))(x)
     # Output => (40, 25, 1)
 
     # Deconvolution layer
-    model.add(Conv2DTranspose(DEPTH, (5,1), padding="same"))
-    model.add(Dropout(DROPOUT))
-    model.add(Activation("relu"))
+    x = Conv2DTranspose(DEPTH, (5,1), padding="same")(x)
+    x = Dropout(DROPOUT)(x)
+    x = Activation("relu")(x)
     # Output => (20, 25, 1)
 
-    model.add(UpSampling2D(size=((2, 1))))
+    # Unpooling layer
+    x = UpSampling2D(size=((2, 1)))(x)
     # Output => (20, 50, 1)
 
-    model.add(Conv2DTranspose(int(DEPTH/4), (5,1), padding="same"))
-    model.add(Dropout(DROPOUT))
-    model.add(Activation("relu"))
-    # Output => (5, 50, 1)
-
-    # Construct the model
-    # Input -> (4,50,1)
-    base_pairs = Input(shape=(channels, data_row, data_col))
-    # Applies the model to the data
-    degrees = model(base_pairs)
+    x = Conv2DTranspose(int(DEPTH/4), (5,1), padding="same")(x)
+    x = Dropout(DROPOUT)(x)
+    degrees = Activation("relu")(x)
     # Output -> (5,50,1)
-    # Construct the modle with the input and the output
+    # Construct the model with the input and the output
     G = Model(base_pairs, degrees)
 
     # Compile the constyructed model
@@ -242,7 +255,7 @@ noise=noise_nucleotides(BATCH_SIZE)
 # print(noise.shape) 
 # (BATCH_SIZE, 4, 50, 1)
 first_generated_data = my_generator.predict(noise)
-# print("First generated data: %s" %first_generated_data)
+print("First generated data: %s" %first_generated_data)
 # print(first_generated_data.shape)
 # (BATCH_SIZE, 5, 50, 1)
 
@@ -258,109 +271,103 @@ def build_my_discriminator(data_col=NUM_COL_DIS, data_col_gen=NUM_COL_GEN,data_r
     # First network: Degrees network 
     # CNN Network
 
-    degrees_network = Sequential()
-
-    # Convolution layer
-    # Input -> (5,50,1)
-    degrees_network.add(Conv2D(DEPTH, (5,1), data_format="channels_first", padding="same"))
-    degrees_network.add(Dropout(DROPOUT))
-    degrees_network.add(Activation("relu"))
-    # Output -> (20,50,1)
-
-    degrees_network.add(MaxPooling2D(pool_size=(2, 1)))
-    # Output -> (20,25,1)
-
-    degrees_network.add(Conv2D(DEPTH*2, (5,1), padding="same"))
-    degrees_network.add(Dropout(DROPOUT))
-    degrees_network.add(Activation("relu"))
-    # Output -> (40,25,1)
-
-    degrees_network.add(MaxPooling2D(pool_size=(2, 1)))
-    # Output -> (40,5,1)
-
-    degrees_network.add(Conv2D(DEPTH*4, (5,1), padding="same"))
-    degrees_network.add(Dropout(DROPOUT))
-    degrees_network.add(Activation("relu"))
-    # Output -> (80,5,1)
-
-    degrees_network.add(MaxPooling2D(pool_size=(5, 1)))
-    # Output -> (80,1,1)
-    
-    # Flatten network
-    # It pools the images into a continuous vector through Flattening. 
-    # It takes the 2-D array, and converts them to a one dimensional single vector.
-    degrees_network.add(Flatten())
-    # Output -> 80
-
-    # Fully connected layer: Dense
-    # It adds a fully connected layer, 
-    # units define the number of nodes that should be present in this layer
-    degrees_network.add(Dense(units = DEPTH*2))
-    degrees_network.add(Activation("relu"))
-    degrees_network.add(Dropout(DROPOUT))
-    # Output -> 40
-
-    degrees_network.add(Dense(units = DEPTH))
-    degrees_network.add(Activation("relu"))
-    degrees_network.add(Dropout(DROPOUT))
-    # Output -> 20
-
-    # Second network: Sequence network 
-    # CNN network 
-    sequence_network = Sequential()
-    # Convolution layer
-    # Input -> (5,50,1)
-    sequence_network.add(Conv2D(DEPTH, (5,1), data_format="channels_first", padding="same"))
-    sequence_network.add(Dropout(DROPOUT))
-    sequence_network.add(Activation("relu"))
-    # Output -> (20,50,1)
-
-    sequence_network.add(MaxPooling2D(pool_size=(2, 1)))
-    # Output -> (20,25,1)
-
-    sequence_network.add(Conv2D(DEPTH*2, (5,1), padding="same"))
-    sequence_network.add(Dropout(DROPOUT))
-    sequence_network.add(Activation("relu"))
-    # Output -> (40,25,1)
-
-    sequence_network.add(MaxPooling2D(pool_size=(2, 1)))
-    # Output -> (40,5,1)
-
-    sequence_network.add(Conv2D(DEPTH*4, (5,1), padding="same"))
-    sequence_network.add(Dropout(DROPOUT))
-    sequence_network.add(Activation("relu"))
-    # Output -> (80,5,1)
-
-    sequence_network.add(MaxPooling2D(pool_size=(5, 1)))
-    # Output -> (80,1,1)
-    
-    # Flatten network
-    # It pools the images into a continuous vector through Flattening. 
-    # It takes the 2-D array, and converts them to a one dimensional single vector.
-    sequence_network.add(Flatten())
-    # Output -> 80
-
-    # Fully connected layer: Dense
-    # It adds a fully connected layer, 
-    # units define the number of nodes that should be present in this layer
-    sequence_network.add(Dense(units = DEPTH*2))
-    sequence_network.add(Activation("relu"))
-    sequence_network.add(Dropout(DROPOUT))
-    # Output -> 40
-
-    sequence_network.add(Dense(units = DEPTH))
-    sequence_network.add(Activation("relu"))
-    sequence_network.add(Dropout(DROPOUT))
-    # Output -> 20
-
     # Define two sets of inputs 
     # img = Input(shape=(channels, data_row, data_col))
     input_A_sequence = Input(shape=(channels_gen,data_row,data_col_gen))
     input_B_degrees = Input(shape=(channels, data_row, data_col))
-   
-    # Define the two outputs from both networks
-    sequence_output=sequence_network(input_A_sequence)
-    degrees_output=degrees_network(input_B_degrees)
+    
+    # Convolution layer -> DEGREES
+    # Input -> (5,50,1)
+    x = Conv2D(DEPTH, (5,1), data_format="channels_first", padding="same")(input_B_degrees)
+    x = Dropout(DROPOUT)(x)
+    x = Activation("relu")(x)
+    # Output -> (20,50,1)
+
+    x = MaxPooling2D(pool_size=(2, 1))(x)
+    # Output -> (20,25,1)
+
+    x = Conv2D(DEPTH*2, (5,1), padding="same")(x)
+    x = Dropout(DROPOUT)(x)
+    x = Activation("relu")(x)
+    # Output -> (40,25,1)
+
+    x = MaxPooling2D(pool_size=(5, 1))(x)
+    # Output -> (40,5,1)
+
+    x = Conv2D(DEPTH*4, (5,1), padding="same")(x)
+    x = Dropout(DROPOUT)(x)
+    x = Activation("relu")(x)
+    # Output -> (80,5,1)
+
+    x = MaxPooling2D(pool_size=(5, 1))(x)
+    # Output -> (80,1,1)
+    
+    # Flatten network
+    # It pools the images into a continuous vector through Flattening. 
+    # It takes the 2-D array, and converts them to a one dimensional single vector.
+    x = Flatten()(x)
+    # Output -> 80
+
+    # Fully connected layer: Dense
+    # It adds a fully connected layer, 
+    # units define the number of nodes that should be present in this layer
+    x = Dense(units = int(DEPTH*2))(x)
+    x = Activation("relu")(x)
+    x = Dropout(DROPOUT)(x)
+    # Output -> 40
+
+    x = Dense(units = DEPTH)(x)
+    x = Activation("relu")(x)
+    degrees_output = Dropout(DROPOUT)(x)
+    # Output -> 20
+
+    # Second network: Sequence network => Sequence output
+    # CNN network 
+
+    # Convolution layer
+    # Input -> (5,50,1)
+    y = Conv2D(DEPTH, (5,1), data_format="channels_first", padding="same")(input_A_sequence)
+    y = Dropout(DROPOUT)(y)
+    y = Activation("relu")(y)
+    # Output -> (20,50,1)
+
+    y = MaxPooling2D(pool_size=(2, 1))(y)
+    # Output -> (20,25,1)
+
+    y = Conv2D(DEPTH*2, (5,1), padding="same")(y)
+    y = Dropout(DROPOUT)(y)
+    y = Activation("relu")(y)
+    # Output -> (40,25,1)
+
+    y = MaxPooling2D(pool_size=(5, 1))(y)
+    # Output -> (40,5,1)
+
+    y = Conv2D(DEPTH*4, (5,1), padding="same")(y)
+    y = Dropout(DROPOUT)(y)
+    y = Activation("relu")(y)
+    # Output -> (80,5,1)
+
+    y = MaxPooling2D(pool_size=(5, 1))(y)
+    # Output -> (80,1,1)
+    
+    # Flatten network
+    # It pools the images into a continuous vector through Flattening. 
+    # It takes the 2-D array, and converts them to a one dimensional single vector.
+    y = Flatten()(y)
+    # Output -> 80
+
+    # Fully connected layer: Dense
+    # It adds a fully connected layer, 
+    # units define the number of nodes that should be present in this layer
+    y = Dense(units = DEPTH*2)(y)
+    y = Activation("relu")(y)
+    y = Dropout(DROPOUT)(y)
+    # Output -> 40
+    
+    y = Dense(units = DEPTH)(y)
+    y = Activation("relu")(y)
+    sequence_output = Dropout(DROPOUT)(y)
+    # Output -> 20
 
     # Construct both models
     seq = Model(input_A_sequence, sequence_output)
@@ -416,7 +423,7 @@ def build_mygan(generator, discriminator, data_col=NUM_COL_GEN, data_row=NUM_NUC
 #Constructs the GAN model
 my_gan = build_mygan(generator=my_generator, discriminator=my_discriminator)
 my_gan.summary()
-## From (BATCH_SIZE, 4, 50, 2) to (2, 1)
+## From (BATCH_SIZE, 4, 50, 2) to (BATCH_SIZE, 1)
 
 #print(noise.shape)
 first_gan_data = my_gan.predict(noise)
@@ -486,8 +493,8 @@ def save_created_figures(epoch,my_generative,X_test):
 ### FUNCTION THAT MEASURES THE PERFORMANCE OF THE TRAIN 
 # AND SAVES A RESULTS OF THE GENERATIVE NETWORK EACH SAMPLE_INTERVAL EPOCHS
 def summarize_performance(epoch,X_test,Y_test,generative,discriminative, batch_size):
-    valid = np.ones((batch_size, 1))
-    fake = np.zeros((batch_size, 1))
+    valid = np.zeros((batch_size, 1))
+    fake = np.ones((batch_size, 1))
     # Takes some test data and evaluate the discriminative network at this point (# epoch)
     idx = np.random.randint(0, X_test.shape[0], batch_size)
     sequences_DB = X_test[idx]
@@ -500,7 +507,7 @@ def summarize_performance(epoch,X_test,Y_test,generative,discriminative, batch_s
     #Verbose=1 -> Progress bar
 
     # Summarize discriminator performance: 
-    print(f"Accuracy real: {acc_real}% , fake: {acc_fake}%")
+    print(f"Accuracy real: {acc_real*100}% , fake: {acc_fake*100}%")
     save_created_figures(epoch=epoch,my_generative=generative,X_test=X_test)
     
 
@@ -508,8 +515,8 @@ def summarize_performance(epoch,X_test,Y_test,generative,discriminative, batch_s
 # Train the model
 def train(X_train,Y_train,Y_test,X_test, generative, discriminative, GAN, epochs=EPOCHS, batch_size=BATCH_SIZE, sample_interval=SAMPLE_INTERVAL):
     # Adversarial ground truths -> in order t cretate the training set for teh discriminator
-    valid = np.ones((batch_size, 1)) #-> For to database images
-    fake = np.zeros((batch_size, 1)) #-> For to generated images with the generative network
+    valid = np.zeros((batch_size, 1)) #-> For to database images
+    fake = np.ones((batch_size, 1)) #-> For to generated images with the generative network
 
     for epoch in range(epochs):
         # Discriminator
@@ -524,20 +531,25 @@ def train(X_train,Y_train,Y_test,X_test, generative, discriminative, GAN, epochs
         # Generates training set for the discriminator: takes generated and original images 
         # with its sentesnces and assign the valid or not valid digit.
         # And train the discriminator and update its model weights
-        d_loss_real,_ = my_discriminator.train_on_batch([sequences_DB,degrees_DB], valid)
-        d_loss_fake,_ = my_discriminator.train_on_batch([sequences_DB,degrees_GEN], fake)
-        d_loss = 0.5 *(d_loss_real + d_loss_fake)
+        
+        my_discriminator.fit(x=[sequences_DB,degrees_DB],y=valid,batch_size=batch_size,epochs=1,verbose=1)
+        my_discriminator.fit(x=[sequences_DB,degrees_GEN],y=fake,batch_size=batch_size,epochs=1,verbose=1)
+        
+        #d_loss_real,_ = my_discriminator.train_on_batch([sequences_DB,degrees_DB], valid)
+        #d_loss_fake,_ = my_discriminator.train_on_batch([sequences_DB,degrees_GEN], fake)
+        #d_loss = 0.5 *(d_loss_real + d_loss_fake)
 
         # Generator
         # Train the generator (to have the discriminator label samples as valid)
         # and update its weights
-        g_loss, _ = GAN.train_on_batch(sequences_DB, valid)
+        #g_loss, _ = GAN.train_on_batch(sequences_DB, valid)
+        GAN.fit(x=sequences_DB,y=valid,batch_size=batch_size,epochs=1,verbose=0)
 
         # Plot the progress:
-        print("> Epoch: %d, D loss: %.3f G loss:%.3f" %(epoch, d_loss, g_loss))
+        #print("> Epoch: %d, D loss: %.3f G loss:%.3f" %(epoch, d_loss, g_loss))
     
         # If at save interval => save a generated image sample in this step and plot the accuracy
-        if (epoch % sample_interval == 0) or (epoch==epochs):
+        if (epoch % sample_interval == 0) or (epoch == (epochs-1)):
             summarize_performance(epoch=epoch,generative=generative, discriminative=discriminative, X_test=X_test, Y_test=Y_test, batch_size=(int(0.1*BATCH_SIZE)+1))
 
 train(X_train=X_train, Y_train=Y_train, X_test=X_test, Y_test=Y_test, generative=my_generator, discriminative=my_discriminator, GAN=my_gan)
