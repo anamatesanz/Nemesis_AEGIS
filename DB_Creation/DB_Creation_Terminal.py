@@ -35,9 +35,9 @@ import time
 # Change
 NUM_NUCLEOTIDES = 50
 RESULTS_CSV = "Carpeta_en_uso/database"
-ROSETA_FILES = "/Users/anuska/Desktop/IGEM/Rosetta/rosetta_src_code/"
-NUM_STRUCTURES_PER_SEQUENCE = 100
-NUM_STRUCTURES_IN_DATA_BASE = 100
+ROSETA_FILES = "/home/carlos/Escritorio/IGEM/Cosasinstaladas"
+NUM_STRUCTURES_PER_SEQUENCE = 1
+NUM_STRUCTURES_IN_DATA_BASE = 5
 MY_NUM = sys.argv[1] # arg
 MINIMIZATION_RNA = "false"
 
@@ -195,11 +195,11 @@ def for_loop_that_creates_csv(file_Name):
         save_pose_in_FASTA_format(seq_A, file_Name)
         save_secondary_structure(secondary_structure, file_Name)
         # Configure and preform the folding in a Rosetta's protocol
-        os.system("$ROSETTA3/rna_denovo.default.macosclangrelease -fasta aptamer%s.txt -nstruct %s -minimize_rna %s -secstruct_file aptamer_sec%s.txt -out::file::silent my_rna_structures%s.out" %(file_Name, NUM_STRUCTURES_PER_SEQUENCE, MINIMIZATION_RNA, file_Name, file_Name))
+        os.system("$ROSETTA3/rna_denovo.default.linuxgccrelease -fasta aptamer%s.txt -nstruct %s -minimize_rna %s -secstruct_file aptamer_sec%s.txt -out::file::silent my_rna_structures%s.out" %(file_Name, NUM_STRUCTURES_PER_SEQUENCE, MINIMIZATION_RNA, file_Name, file_Name))
         # Minimize and extract the best one
         os.system("$RNA_TOOLS/silent_util/silent_file_sort_and_select.py my_rna_structures%s.out -select 1 -o aptamer_best%s.out" % (file_Name, file_Name))
         # To PDB in a Rosetta's protocol
-        os.system("$ROSETTA3/score.default.macosclangrelease -in:file:silent aptamer_best%s.out -in::file::fullatom -out:suffix _%s -out:output -out:file:scorefile default%s.sc" % (file_Name, file_Name,file_Name))
+        os.system("$ROSETTA3/score.default.linuxgccrelease -in:file:silent aptamer_best%s.out -in::file::fullatom -out:suffix _%s -out:output -out:file:scorefile default%s.sc" % (file_Name, file_Name,file_Name))
         # Extract pose from PDB
         atomes = extract_atomes_from_PDB(file_Name)
         # Performns the RNA to DNA change
