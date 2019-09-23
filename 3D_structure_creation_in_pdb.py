@@ -3,26 +3,16 @@
 # conda install -c conda-forge bash
 
 # IMPORTS
-# Rosetta
-import rosetta
+# ViennaRNA
 import RNA
-
-# BioPython and ViennaRNA
-from Bio.SeqRecord import SeqRecord
-from Bio import SeqIO
-from Bio.Alphabet import IUPAC
-from Bio.Seq import Seq
 
 # Os
 import os
 
 # Numpy
 import numpy as np
-from numpy.random import seed
 
-# Pandas
-import pandas as pd
-from pandas import read_csv
+# CSV
 import csv
 
 # Pyrosetta
@@ -187,13 +177,13 @@ def save_to_csv(seq, x, score):
     table = [seq, x, score]
     global FIRST_TIME, RESULTS_CSV
     if (FIRST_TIME == True):
-        with open(RESULTS_CSV, "w", newline="", encoding="utf-8") as csvfile:
+        with open(RESULTS_CSV, "w", newline = "", encoding = "utf-8") as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(headers)
             writer.writerow(table)
         FIRST_TIME = False
     else:
-        with open(RESULTS_CSV, "a", newline="", encoding="utf-8") as csvfile:
+        with open(RESULTS_CSV, "a", newline = "", encoding = "utf-8") as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(table)
 
